@@ -1,0 +1,5 @@
+*.build
+*.cmd
+*.exe
+env/*
+*.whl
