@@ -9,6 +9,7 @@ import apsw
 class RemoteTableException(Exception):
     pass
 
+
 class RemoteTable:
     def Create(self, db, modulename, dbname, tablename, *args):
         if args[0] == 'mssql':
@@ -27,7 +28,6 @@ class RemoteTable:
                 cur.execute(sql)
                 for field in cur.description:
                     name, _type, _, _, precision, scale, _ = field
-                    #print(_type)
                     typename = 'text'
                     if _type == pymssql.NUMBER:
                         typename = 'integer'
@@ -54,8 +54,7 @@ class Table:
         self.cursor = None
         self.sql = sql
         self.fields = fields
-        #print(self.fields)
-
+        
     def BestIndex(self, constraints, orderbys):
         #print(f'constraints: {constraints}, orderbys: {orderbys}')
         #return ((0,),
