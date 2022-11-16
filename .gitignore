@@ -1,5 +1,9 @@
 *.build
 *.cmd
 *.exe
-env/*
+env*/*
 *.whl
+*.sqlite
+*.db
+workspace.*
+*.sql
