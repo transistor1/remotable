@@ -30,7 +30,6 @@ class Remotable:
             arg: str
             for arg in args[2:]:
                 if re.match(r'\s*[^\'"]+\s*=\s*.*', arg) != None:
-                    print('** found assignment')
                     arg_name, arg_val = arg.split('=', maxsplit=1)
                     if arg_val.lower() == "'<getpass>'":
                         arg_val = getpass.getpass('Please enter your database password: ')
@@ -39,7 +38,6 @@ class Remotable:
                     kwargs.update({arg_name: arg_val})
                 else:
                     pargs.append(eval(arg))
-            #print(*pargs, *kwargs.items(), sep='\n')
             connection = db_module.connect(*pargs, **kwargs)
             fields = []
             with connection.cursor() as cur:
