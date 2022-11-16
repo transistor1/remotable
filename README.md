@@ -5,7 +5,7 @@ Remotable is an <a href='https://github.com/rogerbinns/apsw'>APSW</a> shell that
 
 ### Quick Start
 ```
-$ python remotable.py
+$ python -m remotable [database name]
 
 apsw_prompt> CREATE VIRTUAL TABLE access_table USING remotable(pyodbc, select * from [mytable], 'DRIVER=Microsoft Access Driver (*.mdb, *.accdb);DBQ=C:/path/to/a/file.accdb');
 
