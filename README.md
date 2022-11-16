@@ -4,7 +4,10 @@
 Remotable is an <a href='https://github.com/rogerbinns/apsw'>APSW</a> shell that allows you to pull remote data sources into your SQLite database.  Remotable is not a C-extension and thus will only work in the Python APSW shell.
 
 ### Quick Start
+
+The below example uses `pyodbc` to connect to a Microsoft Access database on Windows.  You could also use any DBApi compliant driver, as long as you know its `connect` parameters.
 ```
+$ python -m pip install remotable pyodbc
 $ python -m remotable [database name]
 
 apsw_prompt> CREATE VIRTUAL TABLE access_table USING remotable(pyodbc, select * from [mytable], 'DRIVER=Microsoft Access Driver (*.mdb, *.accdb);DBQ=C:/path/to/a/file.accdb');
