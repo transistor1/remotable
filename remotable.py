@@ -11,7 +11,7 @@ class RemoteTableException(Exception):
     pass
 
 
-class RemoteTable:
+class Remotable:
 
     def Create(self, db, modulename, dbname, *args):
         """Create the virtual database table.
@@ -142,7 +142,7 @@ class Cursor:
 
 _shell = globals().get('shell')
 if _shell:
-    _shell.db.createmodule("remotetable", RemoteTable)
+    _shell.db.createmodule("remotetable", Remotable)
 
 # $ python -c "import apsw;apsw.main()"
 # sqlite> .read remote_table.py
@@ -150,5 +150,5 @@ if _shell:
 
 if __name__ == '__main__':
     _shell = apsw.Shell()
-    _shell.db.createmodule("remotetable", RemoteTable)
+    _shell.db.createmodule("remotable", Remotable)
     _shell.cmdloop()
