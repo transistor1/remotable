@@ -26,12 +26,12 @@ class Remotable:
             kwargs = {}
             arg: str
             for arg in args[2:]:
+                if '<getpass>' in arg:
+                    password = getpass.getpass('Please enter your database password: ')
+                    arg = arg.replace('<getpass>', password)
                 if re.match(r'\s*[^\'"]+\s*=\s*.*', arg) != None:
                     arg_name, arg_val = arg.split('=', maxsplit=1)
-                    if arg_val.lower() == "'<getpass>'":
-                        arg_val = getpass.getpass('Please enter your database password: ')
-                    else:
-                        arg_val = eval(arg_val)
+                    arg_val = eval(arg_val)
                     kwargs.update({arg_name: arg_val})
                 else:
                     pargs.append(eval(arg))
