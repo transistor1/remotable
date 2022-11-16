@@ -3,8 +3,6 @@ import decimal
 import importlib
 import getpass
 import re
-from inspect import trace
-import keyring
 
 import apsw
 
@@ -45,7 +43,6 @@ class RemoteTable:
             fields = []
             with connection.cursor() as cur:
                 cur.execute(sql)
-                #print(*cur.description, sep='\n')
                 for field in cur.description:
                     name, _type, _, _, precision, scale, _ = field
                     typemap = {
@@ -59,25 +56,13 @@ class RemoteTable:
                     }
                     classname = _type.__name__
                     typename = typemap.get(classname, 'text')
-                    #print(_type, classname, typename)
                     if typename == 'integer':
                         if precision or scale:
                             typename = 'real'
-
-                    # typename = 'text'
-                    # if _type == db_module.NUMBER:
-                    #     typename = 'integer'
-                    #     if precision or scale:
-                    #         typename = 'real'
-                    # if _type == db_module.DECIMAL:
-                    #     typename = 'real'
-                    # if _type == db_module.DATETIME:
-                    #     typename = 'real'
                     fields.append({'name': name, 'typename': typename})
                 
                 fielddefs = ', '.join([f"\"{d['name']}\" {d['typename']}" for d in fields])
                 schema = f'create table "{tablename}" ({fielddefs});'
-                #print(schema)
                 return schema, Table(connection, sql, tuple(fields))
         except Exception:
             import traceback
