@@ -139,14 +139,6 @@ class Cursor:
     def __del__(self):
         pass
 
-_shell = globals().get('shell')
-if _shell:
-    _shell.db.createmodule("remotetable", Remotable)
-
-# $ python -c "import apsw;apsw.main()"
-# sqlite> .read remote_table.py
-# sqlite> create virtual table test using remotetable(testm, remotedbtype, remotedbaddr, remotedbuser, remotedatabasename, sql_query);
-
 if __name__ == '__main__':
     _shell = apsw.Shell(args=sys.argv[1:])
     _shell.db.createmodule("remotable", Remotable)
