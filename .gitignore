@@ -8,3 +8,6 @@ env*/*
 workspace.*
 *.sql
 *.pyc
+dist/*
+*.egg*
+.pypirc
