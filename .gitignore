@@ -7,3 +7,4 @@ env*/*
 *.db
 workspace.*
 *.sql
+*.pyc
