@@ -1,6 +1,9 @@
 import datetime
 import decimal
+import importlib
 import getpass
+import re
+from inspect import trace
 import keyring
 
 import apsw
@@ -11,40 +14,75 @@ class RemoteTableException(Exception):
 
 
 class RemoteTable:
-    def Create(self, db, modulename, dbname, tablename, *args):
-        if args[0] == 'mssql':
-            import pymssql
-            server, user, database, sql = args[1:5]
-            cred = keyring.get_credential(f'sqliteremote_{database}', None)
-            if not cred:
-                password = getpass.getpass(f'Password for {user}: ')
-                keyring.set_password(f'sqliteremote_{database}', user, password)
-            else:
-                user = cred.username
-                password = cred.password
-            connection = pymssql.connect(host=server, user=user, password=password, database=database)
+
+    def Create(self, db, modulename, dbname, *args):
+        """Create the virtual database table.
+
+        Args given in the SQL statement should be:
+            python module name, sql, connect arguments
+        """
+        try:
+            tablename = dbname
+            module_name, sql = args[0], args[1]
+            db_module = importlib.import_module(module_name)
+
+            pargs = []
+            kwargs = {}
+            arg: str
+            for arg in args[2:]:
+                if re.match(r'\s*[^\'"]+\s*=\s*.*', arg) != None:
+                    print('** found assignment')
+                    arg_name, arg_val = arg.split('=', maxsplit=1)
+                    if arg_val.lower() == '<getpass>':
+                        arg_val = getpass.getpass('Please enter your database password: ')
+                    else:
+                        arg_val = eval(arg_val)
+                    kwargs.update({arg_name: arg_val})
+                else:
+                    pargs.append(eval(arg))
+            #print(*pargs, *kwargs.items(), sep='\n')
+            connection = db_module.connect(*pargs, **kwargs)
             fields = []
             with connection.cursor() as cur:
                 cur.execute(sql)
+                #print(*cur.description, sep='\n')
                 for field in cur.description:
                     name, _type, _, _, precision, scale, _ = field
-                    typename = 'text'
-                    if _type == pymssql.NUMBER:
-                        typename = 'integer'
+                    typemap = {
+                        'NUMBER': 'integer',
+                        'DECIMAL': 'real',
+                        'DATETIME': 'real',
+                        'str': 'text',
+                        'float': 'real',
+                        'datetime': 'text',
+                        'bool': 'integer',
+                    }
+                    classname = _type.__name__
+                    typename = typemap.get(classname, 'text')
+                    #print(_type, classname, typename)
+                    if typename == 'integer':
                         if precision or scale:
                             typename = 'real'
-                    if _type == pymssql.DECIMAL:
-                        typename = 'real'
-                    if _type == pymssql.DATETIME:
-                        typename = 'real'
+
+                    # typename = 'text'
+                    # if _type == db_module.NUMBER:
+                    #     typename = 'integer'
+                    #     if precision or scale:
+                    #         typename = 'real'
+                    # if _type == db_module.DECIMAL:
+                    #     typename = 'real'
+                    # if _type == db_module.DATETIME:
+                    #     typename = 'real'
                     fields.append({'name': name, 'typename': typename})
-            
-            fielddefs = ', '.join([f"\"{d['name']}\" {d['typename']}" for d in fields])
-            schema = f'create table "{tablename}" ({fielddefs});'
-            #print(schema)
-            return schema, Table(connection, sql, tuple(fields))
-        else:
-            raise RemoteTableException("Couldn't connect to database")
+                
+                fielddefs = ', '.join([f"\"{d['name']}\" {d['typename']}" for d in fields])
+                schema = f'create table "{tablename}" ({fielddefs});'
+                #print(schema)
+                return schema, Table(connection, sql, tuple(fields))
+        except Exception:
+            import traceback
+            traceback.print_exc()
+
 
     Connect = Create
 
