@@ -3,6 +3,7 @@ import decimal
 import importlib
 import getpass
 import re
+import sys
 
 import apsw
 
@@ -31,7 +32,7 @@ class Remotable:
                 if re.match(r'\s*[^\'"]+\s*=\s*.*', arg) != None:
                     print('** found assignment')
                     arg_name, arg_val = arg.split('=', maxsplit=1)
-                    if arg_val.lower() == '<getpass>':
+                    if arg_val.lower() == "'<getpass>'":
                         arg_val = getpass.getpass('Please enter your database password: ')
                     else:
                         arg_val = eval(arg_val)
@@ -149,6 +150,6 @@ if _shell:
 # sqlite> create virtual table test using remotetable(testm, remotedbtype, remotedbaddr, remotedbuser, remotedatabasename, sql_query);
 
 if __name__ == '__main__':
-    _shell = apsw.Shell()
+    _shell = apsw.Shell(args=sys.argv[1:])
     _shell.db.createmodule("remotable", Remotable)
     _shell.cmdloop()
