@@ -1,0 +1,23 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "remotable"
+version = "1.0.0"
+authors = [
+  { name="Steve Russo", email="svrusso1@gmail.com" },
+]
+description = "Remote virtual tables for SQLite, using any Python dbapi driver"
+readme = "README.md"
+requires-python = ">=3.9"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+]
+dependencies = ["apsw>=3.39.4.0"]
+
+[project.urls]
+"Homepage" = "https://github.com/transistor1/remotable"
+"Bug Tracker" = "https://github.com/transistor1/remotable/issues"
