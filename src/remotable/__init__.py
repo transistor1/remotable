@@ -122,6 +122,10 @@ class Cursor:
 
         if type(data) is datetime.datetime:
             return data.strftime('%Y-%m-%d %H:%M:%S')
+        if type(data) is datetime.date:
+            return data.strftime('%Y-%m-%d')
+        if type(data) is datetime.time:
+            return data.strftime('%H:%M:%S')
         if type(data) is decimal.Decimal:
             return float(data)
         return self.current_line[col]
