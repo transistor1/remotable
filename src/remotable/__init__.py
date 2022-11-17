@@ -37,29 +37,29 @@ class Remotable:
                     pargs.append(eval(arg))
             connection = db_module.connect(*pargs, **kwargs)
             fields = []
-            with connection.cursor() as cur:
-                cur.execute(sql)
-                for field in cur.description:
-                    name, _type, _, _, precision, scale, _ = field
-                    typemap = {
-                        'NUMBER': 'integer',
-                        'DECIMAL': 'real',
-                        'DATETIME': 'real',
-                        'str': 'text',
-                        'float': 'real',
-                        'datetime': 'text',
-                        'bool': 'integer',
-                    }
-                    classname = _type.__name__
-                    typename = typemap.get(classname, 'text')
-                    if typename == 'integer':
-                        if precision or scale:
-                            typename = 'real'
-                    fields.append({'name': name, 'typename': typename})
-                
-                fielddefs = ', '.join([f"\"{d['name']}\" {d['typename']}" for d in fields])
-                schema = f'create table "{tablename}" ({fielddefs});'
-                return schema, Table(connection, sql, tuple(fields))
+            cur = connection.cursor()
+            cur.execute(sql)
+            for field in cur.description:
+                name, _type, _, _, precision, scale, _ = field
+                typemap = {
+                    'NUMBER': 'integer',
+                    'DECIMAL': 'real',
+                    'DATETIME': 'real',
+                    'str': 'text',
+                    'float': 'real',
+                    'datetime': 'text',
+                    'bool': 'integer',
+                }
+                classname = getattr(type, '__name__', 'str')
+                typename = typemap.get(classname, 'text')
+                if typename == 'integer':
+                    if precision or scale:
+                        typename = 'real'
+                fields.append({'name': name, 'typename': typename})
+            
+            fielddefs = ', '.join([f"\"{d['name']}\" {d['typename']}" for d in fields])
+            schema = f'create table "{tablename}" ({fielddefs});'
+            return schema, Table(connection, sql, tuple(fields))
         except Exception:
             import traceback
             traceback.print_exc()
