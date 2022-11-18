@@ -169,7 +169,7 @@ class Table:
                              if fields[idx]['name'] in indices.keys()]
         estimated_cost = sum([indices[idx_name] for _, idx_name, _ in constraints_used])
         if not estimated_cost:
-            estimated_cost = 50000
+            estimated_cost = 9E+99
         # Return OR of sum of indices, 2 raised to idx power used as index number.
         # We can determine which fields in fields[] they are if necessary.
         # TODO: is this problematic?
