@@ -10,7 +10,7 @@ The below example uses `pyodbc` to connect to a Microsoft Access database on Win
 $ python -m pip install remotable pyodbc
 $ python -m remotable [database name]
 
-apsw_prompt> CREATE VIRTUAL TABLE access_table USING remotable(pyodbc, mytable, 'DRIVER=Microsoft Access Driver (*.mdb, *.accdb);DBQ=C:/path/to/a/file.accdb', querytype=table);
+sqlite> CREATE VIRTUAL TABLE access_table USING remotable(pyodbc, mytable, 'DRIVER=Microsoft Access Driver (*.mdb, *.accdb);DBQ=C:/path/to/a/file.accdb', querytype=table, indices=field1:100;field2:50);
 
 ```
 
@@ -39,8 +39,8 @@ CREATE VIRTUAL TABLE <table name> USING remotetable(<python dbapi driver>, <sele
 
 After the `arg1`...`argN` parameters, there are some special keywords. You can optionally provide these special arguments after the `connect` arguments.
   - `indices`/`indexes`: Manually specify indexed columns, and provide a relative "cost" for using each index
-    - Format: `indices=<index1>:<cost1>|<index2>:<cost2>|...|<indexN>:<costN>
-    - Example: `indices=field1:300|field2:200`
+    - Format: `indices=<index1>:<cost1>;<index2>:<cost2>;...;<indexN>:<costN>
+    - Example: `indices=field1:300;field2:200`
     - It doesn't matter what numbers you use for the costs; just make them relatively lower or higher to each other to indicate how "expensive" using that index might be.
       - It is best if indices correspond to the actual indices in your remote source table
       - Give indices that have more uniqueness lower numbers than ones that are less unique
