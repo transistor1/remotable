@@ -71,7 +71,7 @@ class Remotable:
                         # relative cost. A more unique index should potentially have
                         # a lower cost.  Format: indices=field 1,cost|field 2,cost ... field n,cost
                         # There may be spaces in the field names if necessary.
-                        indices = re.split(r'\s*\|\s*',arg_val)
+                        indices = re.split(r'\s*\;\s*',arg_val)
                         try:
                             indices = dict(re.split(r'\s*:\s*', idx, maxsplit=1) for idx in indices)
                             indices = {idx.lower(): int(cost) for idx, cost in indices.items()}
