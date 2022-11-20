@@ -73,10 +73,10 @@ class Remotable:
                         # There may be spaces in the field names if necessary.
                         indices = re.split(r'\s*\|\s*',arg_val)
                         try:
-                            indices = dict(re.split(r'\s*:\s*', idx, maxsplit=1) for idx in indices)
+                            indices = dict(re.split(r'\s*;\s*', idx, maxsplit=1) for idx in indices)
                             indices = {idx.lower(): int(cost) for idx, cost in indices.items()}
                         except ValueError:
-                            raise ValueError("Couldn't parse indexes/indices value. Format: indices=field 1,cost|field 2,cost ... field n,cost")
+                            raise ValueError("Couldn't parse indexes/indices value. Format: indices=field 1;cost|field 2;cost ... field n,cost")
                     elif arg_name == 'querytype':
                         querytype = arg_val
                     else:
