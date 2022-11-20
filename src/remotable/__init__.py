@@ -56,6 +56,7 @@ class Remotable:
 
             pargs = []
             kwargs = {}
+            indices = ()
             querytype = 'table' # Default
             arg: str
             for arg in args[2:]:
