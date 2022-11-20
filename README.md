@@ -1,7 +1,7 @@
 # Remotable
 ## Remote virtual tables for SQLite in Python
 
-Remotable is an <a href='https://github.com/rogerbinns/apsw'>APSW</a> shell that allows you to pull remote data sources into your SQLite database.  Remotable is not a C-extension and thus will only work in the Python APSW shell.
+Remotable is an <a href='https://github.com/rogerbinns/apsw'>APSW</a> shell extension that allows you to pull remote data sources into your SQLite database.  Remotable is not a C-extension and thus will only work in the Python APSW shell.
 
 ### Quick Start
 
