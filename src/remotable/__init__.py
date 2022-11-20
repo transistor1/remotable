@@ -26,7 +26,7 @@ class Remotable:
             2. sql,
             3. connect arguments,
             4. optional indices,
-                a. indices=idx1:cost1|idx2:cost2...|idxN:costN
+                a. indices=idx1:cost1;idx2:cost2...;idxN:costN
                 b. idx is the index name in the table
                 c. cost is an estimated cost as an integer. Lower
                    numbers should represent more unique columns (?)
@@ -39,7 +39,7 @@ class Remotable:
         CREATE VIRTUAL TABLE artists using remotable(sqlite3, 
             select * from artists, 
             'C:/path/to/database.sqlite',
-            indices=artist:100|score:20,
+            indices=artist:100;score:20,
             querytype=table);
         """
 
@@ -69,14 +69,14 @@ class Remotable:
                     if arg_name in ['indices', 'indexes']:
                         # Specify remote indices manually in terms of name and
                         # relative cost. A more unique index should potentially have
-                        # a lower cost.  Format: indices=field 1,cost|field 2,cost ... field n,cost
+                        # a lower cost.  Format: indices=field 1,cost;field 2,cost ... field n,cost
                         # There may be spaces in the field names if necessary.
                         indices = re.split(r'\s*\;\s*',arg_val)
                         try:
                             indices = dict(re.split(r'\s*:\s*', idx, maxsplit=1) for idx in indices)
                             indices = {idx.lower(): int(cost) for idx, cost in indices.items()}
                         except ValueError:
-                            raise ValueError("Couldn't parse indexes/indices value. Format: indices=field 1,cost|field 2,cost ... field n,cost")
+                            raise ValueError("Couldn't parse indexes/indices value. Format: indices=field 1,cost;field 2,cost ... field n,cost")
                     elif arg_name == 'querytype':
                         querytype = arg_val
                     else:
