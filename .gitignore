@@ -11,3 +11,5 @@ workspace.*
 dist/*
 *.egg*
 .pypirc
+test_data/*
+launch.json
