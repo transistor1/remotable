@@ -9,14 +9,54 @@ import apsw
 
 SQL_MODE_TABLE = 1
 SQL_MODE_QUERY = 2
+REMOTE_TABLE_INFO = '_remote_table_info'
+REMOTE_TABLE_METADATA = '_remote_table_metadata'
 
 
 class RemoteTableException(Exception):
     pass
 
 
-class Remotable:
+def create_metadata_table(conn: apsw.Connection, table_name, table_sql, metadata: dict):
+    create_tables = f"""CREATE TABLE IF NOT EXISTS {REMOTE_TABLE_INFO} (
+                table_name text,
+                sql text,
+                PRIMARY KEY(table_name)
+                );
+                CREATE TABLE IF NOT EXISTS {REMOTE_TABLE_METADATA} (
+                table_name text,
+                name text,
+                type text,
+                value text,
+                PRIMARY KEY(table_name, name)
+                )
+        """
+    cursor = conn.cursor()
+    for sql in create_tables.split(';'):
+        cursor.execute(sql)
+    
+    sql = f"""insert into {REMOTE_TABLE_INFO} (table_name, sql) values (?,?)
+             on conflict(table_name) do nothing"""
+    cursor.execute(sql, [table_name, table_sql])
+    sql = f"""insert into {REMOTE_TABLE_METADATA} (table_name, name, type, value) values (?,?,?,?)
+             on conflict(table_name, name) do nothing"""
+    for name_, value in metadata.items():
+        type_ = type(value).__name__
+        cursor.execute(sql, [table_name, name_, type_, value])
+
+
+def table_exists(conn, name):
+    sql = """SELECT name FROM sqlite_master WHERE name = ?"""
+    cursor = conn.cursor()
+    cursor.execute(sql, [name])
+    result = cursor.fetchone()
+    return result != None and len(result) != 0
+
+
+class Remotable(apsw.Connection):
     # NOTE: __new__  and __init__ are never called!
+
+
 
     def Create(self, db, modulename, dbname, *args):
         """Create the virtual database table.
@@ -56,7 +96,7 @@ class Remotable:
 
             pargs = []
             kwargs = {}
-            indices = ()
+            indices = {}
             querytype = 'table' # Default
             arg: str
             for arg in args[2:]:
@@ -76,7 +116,9 @@ class Remotable:
                             indices = dict(re.split(r'\s*:\s*', idx, maxsplit=1) for idx in indices)
                             indices = {idx.lower(): int(cost) for idx, cost in indices.items()}
                         except ValueError:
-                            raise ValueError("Couldn't parse indexes/indices value. Format: indices=field 1,cost;field 2,cost ... field n,cost")
+                            print("Couldn't parse indexes/indices value. Format: indices=field 1,cost;field 2,cost ... field n,cost")
+                            print("Ignoring indices.")
+                            indices = {}
                     elif arg_name == 'querytype':
                         querytype = arg_val
                     else:
@@ -115,32 +157,39 @@ class Remotable:
                     if precision or scale:
                         typename = 'real'
                 fields.append({'name': name, 'typename': typename})
-            
             fielddefs = ', '.join([f"\"{d['name']}\" {d['typename']}" for d in fields])
             schema = f'create table "{tablename}" ({fielddefs});'
-            return schema, Table(connection, sql, tuple(fields), indices, querytype)
+            create_metadata_table(self, tablename, sql, {**indices, **{'querytype': querytype}})
+            return schema, Table(self, connection, tablename, sql, tuple(fields), indices, querytype)
         except Exception:
             import traceback
             traceback.print_exc()
 
-
     Connect = Create
 
 class Table:
-    def __init__(self, connection, sql, fields, indices, querytype):
+    def __init__(self, apsw_connection, connection, tablename, sql, fields, indices, querytype):
         self.connection = connection
         self.cursor = None
         self.sql = sql
         self.fields = fields
         self.indices = indices
         self.querytype = querytype
-        
-    def BestIndex(self, constraints, orderbys):
-        #print(f'constraints: {constraints}, orderbys: {orderbys}')
-        #return ((0,),
-        #        0,
-        #        'idx_ordernum')
+        self.tablename = tablename
+        self.apsw_connection = apsw_connection
+        cursor = self.apsw_connection.cursor()
+        sql = f'select name, type, value from {REMOTE_TABLE_METADATA} where table_name = ?'
+        cursor.execute(sql, [self.tablename])
+        indices_list = cursor.fetchall()
+        for _name, _type, value in indices_list:
+            # Get the type function
+            _type = eval(_type)
+            if _name == 'querytype':
+                self.querytype = _type(value)
+            else:
+                self.indices[_name] = _type(value)
 
+    def BestIndex(self, constraints, orderbys):
         constraint_map = {
             apsw.SQLITE_INDEX_CONSTRAINT_EQ: '=',
             apsw.SQLITE_INDEX_CONSTRAINT_FUNCTION: None,
