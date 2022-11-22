@@ -9,13 +9,23 @@ import apsw
 
 SQL_MODE_TABLE = 1
 SQL_MODE_QUERY = 2
+REMOTE_TABLE_INFO = '_remote_table_info'
+REMOTE_TABLE_METADATA = '_remote_table_metadata'
 
 
 class RemoteTableException(Exception):
     pass
 
 
-class Remotable:
+def table_exists(conn, name):
+    sql = """SELECT name FROM sqlite_master WHERE name = ?"""
+    cursor = conn.cursor()
+    cursor.execute(sql, [name])
+    result = cursor.fetchone()
+    return result != None and len(result) != 0
+
+
+class Remotable(apsw.Connection):
     # NOTE: __new__  and __init__ are never called!
 
     def Create(self, db, modulename, dbname, *args):
@@ -25,12 +35,7 @@ class Remotable:
             1. python DBApi module name, 
             2. sql,
             3. connect arguments,
-            4. optional indices,
-                a. indices=idx1:cost1;idx2:cost2...;idxN:costN
-                b. idx is the index name in the table
-                c. cost is an estimated cost as an integer. Lower
-                   numbers should represent more unique columns (?)
-            5. optional "sql" type: query or table
+            4. optional "sql" type: query or table
                 a. sqltype=<query|table>
                 b. 'query' means that the 2nd argument (sql) is a query
                 c. 'table' means that the 2nd argument (sql) is a table name (default)
@@ -39,16 +44,12 @@ class Remotable:
         CREATE VIRTUAL TABLE artists using remotable(sqlite3, 
             select * from artists, 
             'C:/path/to/database.sqlite',
-            indices=artist:100;score:20,
             querytype=table);
         """
 
         # TODO: In args, allow a mechanism for specifying a query for how one would
         # index information from the remote DBMS.  E.g. `show index abc on table`.
         # if it is None or not provided, there would be no such query.
-        # Possibilities:
-        #    1. A query to get all available indices on the table
-        #    2. A way of manually specifying indices and their potential costs
         try:
             tablename = dbname
             module_name, sql = args[0], args[1]
@@ -56,7 +57,6 @@ class Remotable:
 
             pargs = []
             kwargs = {}
-            indices = ()
             querytype = 'table' # Default
             arg: str
             for arg in args[2:]:
@@ -66,18 +66,7 @@ class Remotable:
                 if re.match(r'\s*[^\'"]+\s*=\s*.*', arg) != None:
                     args = re.split(r'\s*=\s*', arg, maxsplit=1)
                     arg_name, arg_val = (a.lower() for a in args)
-                    if arg_name in ['indices', 'indexes']:
-                        # Specify remote indices manually in terms of name and
-                        # relative cost. A more unique index should potentially have
-                        # a lower cost.  Format: indices=field 1,cost;field 2,cost ... field n,cost
-                        # There may be spaces in the field names if necessary.
-                        indices = re.split(r'\s*\;\s*',arg_val)
-                        try:
-                            indices = dict(re.split(r'\s*:\s*', idx, maxsplit=1) for idx in indices)
-                            indices = {idx.lower(): int(cost) for idx, cost in indices.items()}
-                        except ValueError:
-                            raise ValueError("Couldn't parse indexes/indices value. Format: indices=field 1,cost;field 2,cost ... field n,cost")
-                    elif arg_name == 'querytype':
+                    if arg_name == 'querytype':
                         querytype = arg_val
                     else:
                         arg_val = eval(arg_val)
@@ -115,32 +104,27 @@ class Remotable:
                     if precision or scale:
                         typename = 'real'
                 fields.append({'name': name, 'typename': typename})
-            
             fielddefs = ', '.join([f"\"{d['name']}\" {d['typename']}" for d in fields])
             schema = f'create table "{tablename}" ({fielddefs});'
-            return schema, Table(connection, sql, tuple(fields), indices, querytype)
+            return schema, Table(self, connection, tablename, sql, tuple(fields), querytype)
         except Exception:
             import traceback
             traceback.print_exc()
 
-
     Connect = Create
 
 class Table:
-    def __init__(self, connection, sql, fields, indices, querytype):
+    def __init__(self, apsw_connection, connection, tablename, sql, fields, querytype):
         self.connection = connection
         self.cursor = None
         self.sql = sql
         self.fields = fields
-        self.indices = indices
         self.querytype = querytype
-        
-    def BestIndex(self, constraints, orderbys):
-        #print(f'constraints: {constraints}, orderbys: {orderbys}')
-        #return ((0,),
-        #        0,
-        #        'idx_ordernum')
+        self.tablename = tablename
+        self.apsw_connection = apsw_connection
+        cursor = self.apsw_connection.cursor()
 
+    def BestIndex(self, constraints, orderbys):
         constraint_map = {
             apsw.SQLITE_INDEX_CONSTRAINT_EQ: '=',
             apsw.SQLITE_INDEX_CONSTRAINT_FUNCTION: None,
@@ -163,15 +147,13 @@ class Table:
         }
 
         fields = self.fields
-        indices = self.indices
         # constraints = [(field#, operation#)...]
         constraints_used = [(idx, fields[idx]['name'], constraint_map[op]) 
-                             for idx, op in constraints
-                             if fields[idx]['name'] in indices.keys()]
-        estimated_cost = sum([indices[idx_name] for _, idx_name, _ in constraints_used])
+                            for idx, op in constraints if constraint_map[op] != None]
+        estimated_cost = len(fields) * 100 - len(constraints_used) * 100
         if not estimated_cost:
             estimated_cost = 9E+99
-        # Return OR of sum of indices, 2 raised to idx power used as index number.
+        # Return OR of sum of fields, 2 raised to idx power used as index number.
         # We can determine which fields in fields[] they are if necessary.
         # TODO: is this problematic?
         index_number = sum(2**idx for idx,_,_ in constraints_used)
