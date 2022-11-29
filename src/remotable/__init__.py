@@ -111,7 +111,8 @@ class Remotable(apsw.Connection):
             import traceback
             traceback.print_exc()
 
-    Connect = Create
+    def Connect(self, modulename, databasename, tablename, *args):
+        return Remotable.Create(self, modulename, databasename, tablename, *args)
 
 class Table:
     def __init__(self, apsw_connection, connection, tablename, sql, fields, querytype):
