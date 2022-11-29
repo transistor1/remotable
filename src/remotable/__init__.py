@@ -28,7 +28,7 @@ def table_exists(conn, name):
 class Remotable(apsw.Connection):
     # NOTE: __new__  and __init__ are never called!
 
-    def Create(self, db, modulename, dbname, *args):
+    def Create(self, modulename, databasename, tablename, *args):
         """Create the virtual database table.
 
         Args given in the CREATE VIRTUAL TABLE SQL statement should be:
