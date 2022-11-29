@@ -236,7 +236,8 @@ class Cursor:
         return is_eof
 
     def Rowid(self):
-        return self.row_id
+        # TODO: Figure out how to handle collisions
+        return hash(''.join(f'{str(x)}' for x in self.current_line))
 
     def Column(self, col):
         data = None
