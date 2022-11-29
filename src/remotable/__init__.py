@@ -151,8 +151,9 @@ class Table:
         # Return OR of sum of fields, 2 raised to idx power used as index number.
         # We can determine which fields in fields[] they are if necessary.
         # TODO: is this problematic?
-        index_number = sum(2**idx for idx,_,_ in constraints_used)
-        index_string = str([(idx_name, idx_op) for _, idx_name, idx_op in constraints_used])
+        index_number = sum(2**idx for idx in set([c for c,_,_ in constraints_used]))
+        # Indices will be serialized as a string. Start out as a list.
+        index_string = [(idx_name, idx_op) for _, idx_name, idx_op in constraints_used]
         orderby_consumed = False
         constraints_used = [n if idx in [u for u,_,_ in constraints_used] else None 
                 for n, (idx, _) in enumerate(constraints)]
