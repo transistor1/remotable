@@ -187,7 +187,19 @@ class Table:
             4: estimated cost (default a huge number)
             Approximately how many disk operations are needed to provide the results. SQLite uses the cost to optimise queries. For example if the query includes A or B and A has 2,000 operations and B has 100 then it is best to evaluate B before A.
         """
-        
+    
+    def Begin(self):
+        pass
+
+    def Commit(self):
+        pass
+
+    def Rollback(self):
+        pass
+
+    def Sync(self):
+        pass
+
     def Open(self):
         return Cursor(self)
 
