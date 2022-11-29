@@ -214,7 +214,7 @@ class Cursor:
         self.table = table
         self.cursor = table.connection.cursor()
         self.current_line = None
-        self.row_id = 0
+        self.rowid = 0
 
     def Filter(self, indexnum, indexname, constraintargs):
         constraints = eval(indexname)
