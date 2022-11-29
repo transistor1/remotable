@@ -161,12 +161,13 @@ class Table:
         orderby_consumed = False
         constraints_used = [n if idx in [u for u,_,_ in constraints_used] else None 
                 for n, (idx, _) in enumerate(constraints)]
-        if index_string == '':
+        if len(index_string) == 0:
             constraints_used = []
+            estimated_cost = 9E+99
         return [
             constraints_used,
             index_number,
-            index_string,
+            str(index_string),
             orderby_consumed,
             estimated_cost
         ]
