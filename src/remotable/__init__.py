@@ -220,7 +220,7 @@ class Cursor:
         args = [arg for (_, op,),arg in zip(constraints, constraintargs) if op != None]
         clauses = [(left,op) for left,op in constraints if op != None]
         clauses = [f'{left} {op} ?' for left,op in clauses]
-        clauses = ' or '.join(clauses)
+        clauses = ' and '.join(clauses)
         where = f'where {clauses}' if clauses else ''
         sql = ''
         if self.table.querytype == SQL_MODE_TABLE:
