@@ -147,9 +147,7 @@ class Table:
         # constraints = [(field#, operation#)...]
         constraints_used = [(idx, fields[idx]['name'], constraint_map[op]) 
                             for idx, op in constraints if constraint_map[op] != None]
-        estimated_cost = len(fields) * 100 - len(constraints_used) * 100
-        if not estimated_cost:
-            estimated_cost = 9E+99
+        estimated_cost = (len(fields) + 1) * 100 - len(constraints_used) * 100
         # Return OR of sum of fields, 2 raised to idx power used as index number.
         # We can determine which fields in fields[] they are if necessary.
         # TODO: is this problematic?
