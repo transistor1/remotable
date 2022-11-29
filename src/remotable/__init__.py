@@ -46,12 +46,10 @@ class Remotable(apsw.Connection):
             'C:/path/to/database.sqlite',
             querytype=table);
         """
-
         # TODO: In args, allow a mechanism for specifying a query for how one would
         # index information from the remote DBMS.  E.g. `show index abc on table`.
         # if it is None or not provided, there would be no such query.
         try:
-            tablename = dbname
             module_name, sql = args[0], args[1]
             db_module = importlib.import_module(module_name)
 
@@ -117,13 +115,11 @@ class Remotable(apsw.Connection):
 class Table:
     def __init__(self, apsw_connection, connection, tablename, sql, fields, querytype):
         self.connection = connection
-        self.cursor = None
         self.sql = sql
         self.fields = fields
         self.querytype = querytype
         self.tablename = tablename
         self.apsw_connection = apsw_connection
-        cursor = self.apsw_connection.cursor()
 
     def BestIndex(self, constraints, orderbys):
         constraint_map = {
@@ -193,7 +189,6 @@ class Table:
         """
         
     def Open(self):
-        self.cursor = Cursor(self)
         return Cursor(self)
 
     def Disconnect(self):
@@ -222,7 +217,6 @@ class Cursor:
         elif self.table.querytype == SQL_MODE_TABLE:
             sql = f'select t.* from ({self.table.sql}) t {where}'
         self.cursor.execute(sql, args)
-        self.row_id = 0
         self.current_line = self.cursor.fetchone()
 
     def Eof(self):
@@ -236,7 +230,7 @@ class Cursor:
         data = None
         try:
             if self.current_line:
-                data = self.current_line[col]
+                data = self.current_line[col] if col != -1 else self.Rowid()
             else:
                 return None
         except Exception:
@@ -256,7 +250,7 @@ class Cursor:
 
     def Next(self):
         self.current_line = self.cursor.fetchone()
-        self.row_id += 1
+        self.rowid += 1
 
     def Close(self):
         pass
